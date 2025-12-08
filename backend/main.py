@@ -75,6 +75,128 @@ async def chat(message: ChatMessage):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/signup")
+async def signup(request: dict):
+    """Handle user signup"""
+    try:
+        name = request.get("name")
+        email = request.get("email")
+        password = request.get("password")
+        experience_level = request.get("experienceLevel", "beginner")
+        software_background = request.get("softwareBackground", "")
+        hardware_background = request.get("hardwareBackground", "")
+        
+        result = await db_service.create_user(
+            name=name,
+            email=email,
+            password=password,
+            experience_level=experience_level,
+            software_background=software_background,
+            hardware_background=hardware_background
+        )
+        
+        if result["success"]:
+            # Get user data to return
+            auth_result = await db_service.authenticate_user(email, password)
+            return {
+                "success": True,
+                "user": auth_result["user"]
+            }
+        else:
+            raise HTTPException(status_code=400, detail=result["message"])
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/signin")
+async def signin(request: dict):
+    """Handle user signin"""
+    try:
+        email = request.get("email")
+        password = request.get("password")
+        
+        result = await db_service.authenticate_user(email, password)
+        
+        if result["success"]:
+            return {
+                "success": True,
+                "user": result["user"]
+            }
+        else:
+            raise HTTPException(status_code=401, detail=result["message"])
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/personalize")
+async def personalize_content(request: dict):
+    """Personalize content based on user background"""
+    try:
+        content = request.get("content", "")
+        user_background = request.get("userBackground", {})
+        
+        experience_level = user_background.get("experienceLevel", "beginner")
+        software_bg = user_background.get("softwareBackground", "")
+        hardware_bg = user_background.get("hardwareBackground", "")
+        
+        # Create personalization prompt
+        prompt = f"""You are an educational content personalizer. Adjust the following technical content for a student with this background:
+
+Experience Level: {experience_level}
+Software Background: {software_bg}
+Hardware Background: {hardware_bg}
+
+Original Content:
+{content}
+
+Instructions:
+- If beginner: Simplify technical terms, add more explanations, use analogies
+- If intermediate: Balance theory and practice, assume basic programming knowledge
+- If advanced: Add advanced topics, reduce basic explanations, include optimization tips
+- Adjust code examples complexity based on software background
+- Reference hardware they know when explaining concepts
+
+Provide the personalized version of the content maintaining the same structure and format."""
+        
+        response = gemini_service.model.generate_content(prompt)
+        
+        return {"personalizedContent": response.text}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/translate")
+async def translate_content(request: dict):
+    """Translate content to Urdu or back to English"""
+    try:
+        content = request.get("content", "")
+        target_language = request.get("targetLanguage", "urdu")
+        
+        if target_language == "urdu":
+            prompt = f"""Translate the following technical content to Urdu (اردو). 
+Keep technical terms in English but explain them in Urdu.
+Maintain markdown formatting.
+
+Content to translate:
+{content}
+
+Provide the Urdu translation:"""
+        else:
+            prompt = f"""Translate the following Urdu technical content back to English.
+Maintain markdown formatting.
+
+Content to translate:
+{content}
+
+Provide the English translation:"""
+        
+        response = gemini_service.model.generate_content(prompt)
+        
+        return {"translatedContent": response.text}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""

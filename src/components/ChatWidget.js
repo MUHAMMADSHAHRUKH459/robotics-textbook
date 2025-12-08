@@ -9,6 +9,22 @@ export default function ChatWidget() {
   const [selectedText, setSelectedText] = useState('');
   const messagesEndRef = useRef(null);
 
+  // Initialize user profile on mount
+  useEffect(() => {
+    // Check if user profile exists in localStorage
+    const userProfile = localStorage.getItem('userProfile');
+    if (!userProfile) {
+      // Set a default profile for demo purposes
+      // In production, this would be set during login from better-auth
+      const defaultProfile = {
+        experienceLevel: 'beginner',
+        softwareBackground: 'Basic Python',
+        hardwareBackground: 'None'
+      };
+      localStorage.setItem('userProfile', JSON.stringify(defaultProfile));
+    }
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
