@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Layout from '@theme/Layout';
-import styles from './auth.module.css';
+import styles from './signup.module.css';
 
 export default function Signup() {
   const [formData, setFormData] = useState({
