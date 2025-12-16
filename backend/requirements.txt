@@ -5,3 +5,4 @@ qdrant-client
 asyncpg
 python-dotenv
 pydantic
+mangum
